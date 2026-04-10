@@ -1,54 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <title>Image Classifier</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
 </head>
 
 <body>
 
-<h2>Classifier</h2>
-<p id="result">Waiting...</p>
+<h2>Image Classifier</h2>
+
+<p id="result">Loading model...</p>
 
 <script>
+
 let model;
 
+// Load model
 async function loadModel() {
-  const URL = "./";
+  const URL = "./"; 
   model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+  document.getElementById("result").innerText = "Model Loaded ✔";
 }
 
-async function predictFromBase64(base64) {
-  const img = new Image();
-  img.src = base64;
+// Predict from image
+async function predictImage(img) {
+  const prediction = await model.predict(img);
 
-  img.onload = async () => {
-    const prediction = await model.predict(img);
-
-    let highest = prediction[0];
-    for (let i = 1; i < prediction.length; i++) {
-        if (prediction[i].probability > highest.probability) {
-            highest = prediction[i];
-        }
+  let best = prediction[0];
+  for (let i = 1; i < prediction.length; i++) {
+    if (prediction[i].probability > best.probability) {
+      best = prediction[i];
     }
+  }
 
-    document.getElementById("result").innerText =
-      highest.className + "|" + highest.probability;
-  };
+  document.getElementById("result").innerText =
+    best.className + " (" + (best.probability * 100).toFixed(2) + "%)";
 }
 
+// When page loads
 window.onload = async () => {
   await loadModel();
 
+  // Get image from URL (optional future use)
   const params = new URLSearchParams(window.location.search);
-  const imgData = params.get("img");
+  const imgUrl = params.get("img");
 
-  if (imgData) {
-    predictFromBase64(imgData);
-  } else {
-    document.getElementById("result").innerText = "No image received";
+  if (imgUrl) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = imgUrl;
+
+    img.onload = () => {
+      predictImage(img);
+    };
   }
 };
+
 </script>
 
 </body>
