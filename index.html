@@ -6,42 +6,49 @@
 </head>
 
 <body>
-<h2>Image Classifier</h2>
 
-<input type="file" id="imageUpload"/>
-<button onclick="predict()">Predict</button>
-
-<p id="result">Result will appear here</p>
+<h2>Classifier</h2>
+<p id="result">Waiting...</p>
 
 <script>
 let model;
 
 async function loadModel() {
-  const URL = "./"; // same folder
+  const URL = "./";
   model = await tmImage.load(URL + "model.json", URL + "metadata.json");
 }
 
-async function predict() {
-  const file = document.getElementById("imageUpload").files[0];
-  const img = document.createElement("img");
-  img.src = URL.createObjectURL(file);
+async function predictFromBase64(base64) {
+  const img = new Image();
+  img.src = base64;
 
   img.onload = async () => {
     const prediction = await model.predict(img);
 
     let highest = prediction[0];
     for (let i = 1; i < prediction.length; i++) {
-      if (prediction[i].probability > highest.probability) {
-        highest = prediction[i];
-      }
+        if (prediction[i].probability > highest.probability) {
+            highest = prediction[i];
+        }
     }
 
     document.getElementById("result").innerText =
-      highest.className + " (" + (highest.probability * 100).toFixed(2) + "%)";
+      highest.className + "|" + highest.probability;
   };
 }
 
-loadModel();
+window.onload = async () => {
+  await loadModel();
+
+  const params = new URLSearchParams(window.location.search);
+  const imgData = params.get("img");
+
+  if (imgData) {
+    predictFromBase64(imgData);
+  } else {
+    document.getElementById("result").innerText = "No image received";
+  }
+};
 </script>
 
 </body>
